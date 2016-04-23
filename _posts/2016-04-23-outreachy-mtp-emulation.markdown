@@ -2,7 +2,7 @@
 layout: post
 title:  "Outreachy"
 date:   2016-04-23 11:27:55 -0700
-categories: outreachy
+tags: Outreachy
 ---
 
 So I managed to get accepted into Gnome's
