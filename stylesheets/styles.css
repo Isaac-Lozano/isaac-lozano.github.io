@@ -847,3 +847,12 @@ section #title .credits.right {
     display: none;
   }
 }
+
+footer {
+    margin-top: 20px;
+    border-top: 1px #FFF solid;
+}
+
+#disqus_thread {
+    margin-top: 20px;
+}
