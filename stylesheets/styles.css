@@ -712,7 +712,6 @@ dt {
   max-width: 650px;
   margin: 0 auto;
   padding: 0 10px;
-  background: blue;
   margin: 6px auto;
 }
 #header nav li {
@@ -782,9 +781,8 @@ dt {
 
 section {
   max-width: 650px;
-  padding: 30px 0px 50px 0px;
+  padding: 0px 0px 50px 0px;
   margin: 20px 0;
-  margin-top: 70px;
 }
 section #title {
   border: 0;
