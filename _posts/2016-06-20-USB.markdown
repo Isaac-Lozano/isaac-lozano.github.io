@@ -1,0 +1,297 @@
+---
+layout: post
+title:  "USB overview"
+date:   2016-04-23 11:27:55 -0700
+tags: Outreachy,USB
+---
+
+To start off, I thought I'd give a bit of a background to my project. And since the project will be working with MTP over USB,
+I thought I'd start with a high-level overview of USB.
+
+A USB consists of a sort of tree of descriptors. At the top level is the device descriptor. This holds data such as the device's
+USB Specification number, vendor ID, and serial number. The device descriptor describes, well, the device itself. There is (almost
+always) a one-to-one link between a device descriptor and a physical device.
+
+The device descriptor contains a number of configuration descriptors. These descriptors contain information such as the configuration's
+maximum power consumption and whether it's self-powered or not. Each configuration represents a "mode" for the USB device to be in as
+only one configuration can be enabled at a time.
+
+Each configuration descriptor can contain a number of interface descriptors as well. Each interface contains data describing its protocol,
+its class, subclass etc. Each interface corresponds to a sort of "service" that the USB device can offer. USB mass storage, debugging channels,
+or in my case, an MTP server.
+
+And finally, each interface descriptor contains a number of endpoint descriptors. The descriptor contains data concerning the attributes
+of the endpoint (whether it is for bulk-data or interrupt-based) and its maximum packet size. The endpoint itself represents a channel
+for data to be sent to or recieved from.
+
+For a more concrete example, I'll briefly go over the descriptors of an actual device. My phone.
+
+Entering this command into my shell lists the USB devices conected to my computer.
+
+~~~
+$ lsusb
+Bus 004 Device 002: ID 8087:0024 Intel Corp. Integrated Rate Matching Hub
+Bus 004 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub
+Bus 003 Device 004: ID 0c45:64e0 Microdia 
+Bus 003 Device 003: ID 8087:07da Intel Corp. 
+Bus 003 Device 002: ID 8087:0024 Intel Corp. Integrated Rate Matching Hub
+Bus 003 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub
+Bus 002 Device 001: ID 1d6b:0003 Linux Foundation 3.0 root hub
+Bus 001 Device 060: ID 1b1c:1b09 Corsair 
+Bus 001 Device 002: ID 25a7:2433  
+Bus 001 Device 111: ID 04e8:6860 Samsung Electronics Co., Ltd Galaxy (MTP)
+Bus 001 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub
+~~~
+
+We have a couple of miscellaneous USB hubs and devices, but we can also see a Samsung device connected (My phone). We can investigate further.
+
+~~~
+$ lsusb -v -s 001:111
+
+Bus 001 Device 111: ID 04e8:6860 Samsung Electronics Co., Ltd Galaxy (MTP)
+Device Descriptor:
+  bLength                18
+  bDescriptorType         1
+  bcdUSB               2.00
+  bDeviceClass            0 
+  bDeviceSubClass         0 
+  bDeviceProtocol         0 
+  bMaxPacketSize0        64
+  idVendor           0x04e8 Samsung Electronics Co., Ltd
+  idProduct          0x6860 Galaxy (MTP)
+  bcdDevice            4.00
+  iManufacturer           2 SAMSUNG
+  iProduct                3 SAMSUNG_Android_SGH-i547
+  bNumConfigurations      2
+  Configuration Descriptor:
+    bLength                 9
+    bDescriptorType         2
+    wTotalLength           39
+    bNumInterfaces          1
+    bConfigurationValue     1
+    iConfiguration          0 
+    bmAttributes         0xc0
+      Self Powered
+    MaxPower               96mA
+    Interface Descriptor:
+      bLength                 9
+      bDescriptorType         4
+      bInterfaceNumber        0
+      bAlternateSetting       0
+      bNumEndpoints           3
+      bInterfaceClass         6 Imaging
+      bInterfaceSubClass      1 Still Image Capture
+      bInterfaceProtocol      1 Picture Transfer Protocol (PIMA 15470)
+      iInterface              5 MTP
+      Endpoint Descriptor:
+        bLength                 7
+        bDescriptorType         5
+        bEndpointAddress     0x81  EP 1 IN
+        bmAttributes            2
+          Transfer Type            Bulk
+          Synch Type               None
+          Usage Type               Data
+        wMaxPacketSize     0x0200  1x 512 bytes
+        bInterval               0
+      Endpoint Descriptor:
+        bLength                 7
+        bDescriptorType         5
+        bEndpointAddress     0x01  EP 1 OUT
+        bmAttributes            2
+          Transfer Type            Bulk
+          Synch Type               None
+          Usage Type               Data
+        wMaxPacketSize     0x0200  1x 512 bytes
+        bInterval               1
+      Endpoint Descriptor:
+        bLength                 7
+        bDescriptorType         5
+        bEndpointAddress     0x82  EP 2 IN
+        bmAttributes            3
+          Transfer Type            Interrupt
+          Synch Type               None
+          Usage Type               Data
+        wMaxPacketSize     0x001c  1x 28 bytes
+        bInterval               6
+  Configuration Descriptor:
+    bLength                 9
+    bDescriptorType         2
+    wTotalLength          114
+    bNumInterfaces          3
+    bConfigurationValue     2
+    iConfiguration          0 
+    bmAttributes         0xc0
+      Self Powered
+    MaxPower               96mA
+    Interface Descriptor:
+      bLength                 9
+      bDescriptorType         4
+      bInterfaceNumber        0
+      bAlternateSetting       0
+      bNumEndpoints           3
+      bInterfaceClass         6 Imaging
+      bInterfaceSubClass      1 Still Image Capture
+      bInterfaceProtocol      1 Picture Transfer Protocol (PIMA 15470)
+      iInterface              5 MTP
+      Endpoint Descriptor:
+        bLength                 7
+        bDescriptorType         5
+        bEndpointAddress     0x81  EP 1 IN
+        bmAttributes            2
+          Transfer Type            Bulk
+          Synch Type               None
+          Usage Type               Data
+        wMaxPacketSize     0x0200  1x 512 bytes
+        bInterval               0
+      Endpoint Descriptor:
+        bLength                 7
+        bDescriptorType         5
+        bEndpointAddress     0x01  EP 1 OUT
+        bmAttributes            2
+          Transfer Type            Bulk
+          Synch Type               None
+          Usage Type               Data
+        wMaxPacketSize     0x0200  1x 512 bytes
+        bInterval               1
+      Endpoint Descriptor:
+        bLength                 7
+        bDescriptorType         5
+        bEndpointAddress     0x82  EP 2 IN
+        bmAttributes            3
+          Transfer Type            Interrupt
+          Synch Type               None
+          Usage Type               Data
+        wMaxPacketSize     0x001c  1x 28 bytes
+        bInterval               6
+    Interface Association:
+      bLength                 8
+      bDescriptorType        11
+      bFirstInterface         1
+      bInterfaceCount         2
+      bFunctionClass          2 Communications
+      bFunctionSubClass       2 Abstract (modem)
+      bFunctionProtocol       1 AT-commands (v.25ter)
+      iFunction               8 CDC Serial
+    Interface Descriptor:
+      bLength                 9
+      bDescriptorType         4
+      bInterfaceNumber        1
+      bAlternateSetting       0
+      bNumEndpoints           1
+      bInterfaceClass         2 Communications
+      bInterfaceSubClass      2 Abstract (modem)
+      bInterfaceProtocol      1 AT-commands (v.25ter)
+      iInterface              6 CDC Abstract Control Model (ACM)
+      CDC Header:
+        bcdCDC               1.10
+      CDC Call Management:
+        bmCapabilities       0x00
+        bDataInterface          2
+      CDC ACM:
+        bmCapabilities       0x02
+          line coding and serial state
+      CDC Union:
+        bMasterInterface        1
+        bSlaveInterface         2 
+      Endpoint Descriptor:
+        bLength                 7
+        bDescriptorType         5
+        bEndpointAddress     0x84  EP 4 IN
+        bmAttributes            3
+          Transfer Type            Interrupt
+          Synch Type               None
+          Usage Type               Data
+        wMaxPacketSize     0x000a  1x 10 bytes
+        bInterval               9
+    Interface Descriptor:
+      bLength                 9
+      bDescriptorType         4
+      bInterfaceNumber        2
+      bAlternateSetting       0
+      bNumEndpoints           2
+      bInterfaceClass        10 CDC Data
+      bInterfaceSubClass      0 
+      bInterfaceProtocol      0 
+      iInterface              7 CDC ACM Data
+      Endpoint Descriptor:
+        bLength                 7
+        bDescriptorType         5
+        bEndpointAddress     0x83  EP 3 IN
+        bmAttributes            2
+          Transfer Type            Bulk
+          Synch Type               None
+          Usage Type               Data
+        wMaxPacketSize     0x0200  1x 512 bytes
+        bInterval               0
+      Endpoint Descriptor:
+        bLength                 7
+        bDescriptorType         5
+        bEndpointAddress     0x02  EP 2 OUT
+        bmAttributes            2
+          Transfer Type            Bulk
+          Synch Type               None
+          Usage Type               Data
+        wMaxPacketSize     0x0200  1x 512 bytes
+        bInterval               0
+Device Qualifier (for other device speed):
+  bLength                10
+  bDescriptorType         6
+  bcdUSB               2.00
+  bDeviceClass            0 
+  bDeviceSubClass         0 
+  bDeviceProtocol         0 
+  bMaxPacketSize0        64
+  bNumConfigurations      2
+can't get debug descriptor: Resource temporarily unavailable
+Device Status:     0x0000
+  (Bus Powered)
+~~~
+
+Here we see some nicely indented, though lengthy, data.
+
+First, our device descriptor:
+
+~~~
+Device Descriptor:
+  bLength                18
+  bDescriptorType         1
+  bcdUSB               2.00
+  bDeviceClass            0 
+  bDeviceSubClass         0 
+  bDeviceProtocol         0 
+  bMaxPacketSize0        64
+  idVendor           0x04e8 Samsung Electronics Co., Ltd
+  idProduct          0x6860 Galaxy (MTP)
+  bcdDevice            4.00
+  iManufacturer           2 SAMSUNG
+  iProduct                3 SAMSUNG_Android_SGH-i547
+  bNumConfigurations      2
+~~~
+
+Not to exciting, just some standard data about what the device is (the iSerial field has been left out for security).
+Something to note, however, we have two different configurations.
+
+The first configuration contains one interface.
+
+~~~
+    Interface Descriptor:
+      bLength                 9
+      bDescriptorType         4
+      bInterfaceNumber        0
+      bAlternateSetting       0
+      bNumEndpoints           3
+      bInterfaceClass         6 Imaging
+      bInterfaceSubClass      1 Still Image Capture
+      bInterfaceProtocol      1 Picture Transfer Protocol (PIMA 15470)
+      iInterface              5 MTP
+~~~
+
+According to this, this interface coresponds to an MTP server. The interface itself contains three endpoints: a bulk for
+both data in and out, and an interrupt endpoint.
+
+Now for the second configuration descriptor. This one contains three interfaces: the first is a copy of the MTP interface
+seen earlier, however the second and third have to do with something called CDC ACM. This is a protocol used to emulate
+serial ports over USB, so one can assume it would probably be used for debugging purposes.
+
+So the conclusion can be drawn that the first configuration would normally be used when an average user wanted to connect
+their phone to their computer to transfer files, while the second configuration would be used in a development environment.
