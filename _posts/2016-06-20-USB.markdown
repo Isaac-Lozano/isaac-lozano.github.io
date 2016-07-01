@@ -1,7 +1,7 @@
 ---
 layout: post
 title:  "USB overview"
-date:   2016-04-23 11:27:55 -0700
+date:   2016-06-23 11:27:55 -0700
 tags: Outreachy,USB
 ---
 
