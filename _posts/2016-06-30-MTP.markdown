@@ -1,0 +1,43 @@
+---
+layout: post
+title:  "MTP overview"
+date:   2016-04-30 11:27:55 -0700
+tags: Outreachy,USB
+---
+
+To follow up my post on USB, I thought I'd talk about MTP over USB.
+
+MTP stands for "Media Transfer Protocol". It was created as an extension to PTP (Picture Transfer Protocol).
+PTP was originally created for transfering pictures to and from cameras. MTP extends off of it and is
+transport-agnostic, but I will just focus on MTP over USB.
+
+MTP is strucctured via "objects". Each object coresponds to a file or a directory. Each object is assicned a
+numerical ID. Objects can be sent to and from the device.
+
+Objects are stored on "storages". Storages just logically separate groups of files. For
+example, storages on a phone could include internal memory and SD card memory.
+
+Communication is done via transactions during sessions. A session must be opened before most operations can
+be requested. A transaction consists of three phases, the operation request phase,
+the data phase, and the response phase. In the operation request phase, an operation code is sent to the device along with
+the hessionID, transactionID, and arguments. During the data phase, the device may send back binary data
+depending on the operation. During the response
+phase, the device sends back a response code and some data (along with the sessionID and transactionID for confirmation).
+All data is sent in containers that specify the length, type, operation, transactionID, of the payload, along with the payload
+itself.
+
+Currently, in the MTP project I'm working on for QEMU, we have a subset of the full operation list implemented;
+Just enought to have a implementation with minimal features. The operations we have currently are:
+
+* GetDeviceInfo
+* OpenSession
+* CloseSession
+* GetStorageIDs
+* GetStorageInfo
+* GetNumObjects
+* GetObjectHandles
+* GetObjectInfo
+* GetObject
+* GetPartialObject
+
+I will be hoping to fix some existing bugs as well as adding SendObjectInfo and SendObject to the list of operations in the coming weeks.
