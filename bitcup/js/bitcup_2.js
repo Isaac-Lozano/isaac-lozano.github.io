@@ -19,6 +19,7 @@
         this.engine.world.gravity.y = 8;
         this.engine.timing.timeScale = 0.2;
         this.renderer = Matter.Render.create({
+            hasBounds: true,
             element: element,
             engine: this.engine,
             options: {
@@ -27,7 +28,7 @@
             },
         });
 //        Matter.Events.on(this.engine, "afterUpdate", this.on_before.bind(this))
-        this.cup = Matter.Bodies.fromVertices(375, 400, [
+        var cup = Matter.Bodies.fromVertices(375, 400, [
             {x: 5, y: 35},
             {x: 35, y: 270},
             {x: 190, y: 270},
@@ -41,8 +42,8 @@
         {
             isStatic: true,
         });
-        console.log(this.cup);
-        Matter.World.add(this.engine.world, this.cup);
+        console.log(cup);
+        Matter.World.add(this.engine.world, cup);
 
         this.listener = new TwitchListener(oauth, channel_id); 
         this.listener.callbacks = [this.on_bit.bind(this)];
@@ -52,9 +53,7 @@
         renderer: null,
         listener: null,
         queue: [], /* Inefficient, but it works cause we won't have many bits at a time */
-        cup: null,
         run: function() {
-            Matter.Body.setPosition(this.cup, {x: 375, y: 400});
             this.run_loop();
             Matter.Render.run(this.renderer);
         },
