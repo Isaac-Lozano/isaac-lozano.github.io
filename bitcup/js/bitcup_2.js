@@ -19,10 +19,10 @@
         this.engine.world.gravity.y = 8;
         this.engine.timing.timeScale = 0.2;
         this.renderer = Matter.Render.create({
-            hasBounds: true,
             element: element,
             engine: this.engine,
             options: {
+                hasBounds: true,
                 wireframes: false,
 //                showAngleIndicator: true,
             },
