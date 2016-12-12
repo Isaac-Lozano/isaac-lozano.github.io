@@ -80,12 +80,17 @@
         drop_bit: function() {
             if(this.queue.length != 0) {
                 var mass = this.queue.shift();
+                var img_path = "img/haff.png";
+                if(mass >= 100)
+                {
+                    img_path = "img/rage.png";
+                }
                 var bit = Matter.Bodies.circle(400, -000, 20, {
                     restitution: 0.88,
                     friction: 0.010,
                     render: {
                         sprite: {
-                            texture: "img/haff.png",
+                            texture: img_path,
                         }
                     },
                 });
