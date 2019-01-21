@@ -4835,7 +4835,7 @@ var elm$core$Platform$Cmd$batch = _Platform_batch;
 var elm$core$Platform$Cmd$none = elm$core$Platform$Cmd$batch(_List_Nil);
 var author$project$Main$init = function (_n0) {
 	return _Utils_Tuple2(
-		{frameEntered: elm$core$Maybe$Nothing, loadDelay: elm$core$Maybe$Nothing, targetFrame: elm$core$Maybe$Nothing, timer: elm$core$Maybe$Nothing},
+		{frameEntered: elm$core$Maybe$Nothing, loadDelay: elm$core$Maybe$Nothing, targetFrame: elm$core$Maybe$Nothing, timer: elm$core$Maybe$Nothing, timerId: 0},
 		elm$core$Platform$Cmd$none);
 };
 var elm$core$Platform$Sub$batch = _Platform_batch;
@@ -4873,13 +4873,10 @@ var author$project$Timer$delay = F2(
 			timer,
 			{base: newBase});
 	});
-var elm$core$Debug$log = _Debug_log;
 var author$project$Timer$incrementTicks = function (timer) {
 	return _Utils_update(
 		timer,
-		{
-			ticks: A2(elm$core$Debug$log, 'Incrementing ticks to', timer.ticks + 1)
-		});
+		{ticks: timer.ticks + 1});
 };
 var elm$core$Task$andThen = _Scheduler_andThen;
 var elm$core$Task$succeed = _Scheduler_succeed;
@@ -4925,7 +4922,7 @@ var author$project$Timer$tick = function (timer) {
 			elm$core$Task$map,
 			function (t) {
 				var now = elm$time$Time$posixToMillis(t);
-				var currentTick = A2(elm$core$Debug$log, 'Current Tick', timer.ticks + 1);
+				var currentTick = timer.ticks + 1;
 				var offset = elm$core$Basics$round(currentTick * timer.tickLen);
 				var base = elm$time$Time$posixToMillis(timer.base);
 				var timeToWait = (base + offset) - now;
@@ -4933,6 +4930,10 @@ var author$project$Timer$tick = function (timer) {
 			},
 			elm$time$Time$now));
 };
+var elm$core$Basics$always = F2(
+	function (a, _n0) {
+		return a;
+	});
 var elm$core$Basics$composeL = F3(
 	function (g, f, x) {
 		return g(
@@ -4943,6 +4944,7 @@ var elm$core$Basics$composeR = F3(
 		return g(
 			f(x));
 	});
+var elm$core$Debug$log = _Debug_log;
 var elm$core$Maybe$map = F2(
 	function (f, maybe) {
 		if (maybe.$ === 'Just') {
@@ -5121,38 +5123,53 @@ var elm$core$Task$perform = F2(
 	});
 var author$project$Main$update = F2(
 	function (msg, model) {
+		var model_ = A2(elm$core$Debug$log, 'model', model);
 		var _n0 = A2(elm$core$Debug$log, 'Message', msg);
 		switch (_n0.$) {
 			case 'NewTimer':
 				var t = _n0.a;
+				var newId = model.timerId + 1;
 				return _Utils_Tuple2(
 					_Utils_update(
 						model,
 						{
-							timer: elm$core$Maybe$Just(t)
+							timer: elm$core$Maybe$Just(t),
+							timerId: newId
 						}),
 					A2(
 						elm$core$Task$perform,
 						author$project$Main$Tick,
-						author$project$Timer$tick(t)));
-			case 'Tick':
-				var newModel = _Utils_update(
-					model,
-					{
-						timer: A2(elm$core$Maybe$map, author$project$Timer$incrementTicks, model.timer)
-					});
-				return _Utils_Tuple2(
-					newModel,
-					A2(
-						elm$core$Maybe$withDefault,
-						elm$core$Platform$Cmd$none,
 						A2(
-							elm$core$Maybe$map,
+							elm$core$Task$map,
+							elm$core$Basics$always(newId),
+							author$project$Timer$tick(t))));
+			case 'Tick':
+				var id = _n0.a;
+				if (_Utils_eq(id, model.timerId)) {
+					var newModel = _Utils_update(
+						model,
+						{
+							timer: A2(elm$core$Maybe$map, author$project$Timer$incrementTicks, model.timer)
+						});
+					return _Utils_Tuple2(
+						newModel,
+						A2(
+							elm$core$Maybe$withDefault,
+							elm$core$Platform$Cmd$none,
 							A2(
-								elm$core$Basics$composeL,
-								elm$core$Task$perform(author$project$Main$Tick),
-								author$project$Timer$tick),
-							newModel.timer)));
+								elm$core$Maybe$map,
+								A2(
+									elm$core$Basics$composeL,
+									elm$core$Task$perform(author$project$Main$Tick),
+									A2(
+										elm$core$Basics$composeR,
+										author$project$Timer$tick,
+										elm$core$Task$map(
+											elm$core$Basics$always(model.timerId)))),
+								newModel.timer)));
+				} else {
+					return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
+				}
 			case 'StopTimer':
 				return _Utils_Tuple2(
 					_Utils_update(
