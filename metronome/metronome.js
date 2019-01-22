@@ -4356,6 +4356,7 @@ function _Browser_load(url)
 		}
 	}));
 }
+var author$project$Main$EnterTimer = {$: 'EnterTimer'};
 var elm$core$Maybe$Nothing = {$: 'Nothing'};
 var elm$core$Basics$False = {$: 'False'};
 var elm$core$Basics$True = {$: 'True'};
@@ -4835,7 +4836,7 @@ var elm$core$Platform$Cmd$batch = _Platform_batch;
 var elm$core$Platform$Cmd$none = elm$core$Platform$Cmd$batch(_List_Nil);
 var author$project$Main$init = function (_n0) {
 	return _Utils_Tuple2(
-		{frameEntered: elm$core$Maybe$Nothing, loadDelay: elm$core$Maybe$Nothing, targetFrame: elm$core$Maybe$Nothing, timer: elm$core$Maybe$Nothing, timerId: 0},
+		{frameEntered: elm$core$Maybe$Nothing, loadDelay: elm$core$Maybe$Nothing, mode: author$project$Main$EnterTimer, restartDelay: elm$core$Maybe$Nothing, targetFrame: elm$core$Maybe$Nothing, timer: elm$core$Maybe$Nothing, timerId: 0},
 		elm$core$Platform$Cmd$none);
 };
 var elm$core$Platform$Sub$batch = _Platform_batch;
@@ -4846,6 +4847,7 @@ var author$project$Main$subscriptions = function (model) {
 var author$project$Main$NewTimer = function (a) {
 	return {$: 'NewTimer', a: a};
 };
+var author$project$Main$RestartTimer = {$: 'RestartTimer'};
 var author$project$Main$Tick = function (a) {
 	return {$: 'Tick', a: a};
 };
@@ -5223,13 +5225,70 @@ var author$project$Main$update = F2(
 							targetFrame: elm$core$String$toInt(text)
 						}),
 					elm$core$Platform$Cmd$none);
-			default:
+			case 'EnterInputUpdate':
 				var text = _n0.a;
 				return _Utils_Tuple2(
 					_Utils_update(
 						model,
 						{
 							frameEntered: elm$core$String$toInt(text)
+						}),
+					elm$core$Platform$Cmd$none);
+			case 'RestartInputUpdate':
+				var text = _n0.a;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{
+							restartDelay: elm$core$String$toInt(text)
+						}),
+					elm$core$Platform$Cmd$none);
+			default:
+				var _n1 = function () {
+					var _n2 = model.mode;
+					if (_n2.$ === 'EnterTimer') {
+						return _Utils_Tuple2(
+							A2(
+								elm$core$Maybe$map,
+								A2(
+									elm$core$Basics$composeL,
+									A2(
+										elm$core$Basics$composeL,
+										elm$core$Basics$round,
+										elm$core$Basics$mul(1000 / 60)),
+									elm$core$Basics$toFloat),
+								model.restartDelay),
+							author$project$Main$RestartTimer);
+					} else {
+						return _Utils_Tuple2(
+							A2(
+								elm$core$Maybe$map,
+								A2(
+									elm$core$Basics$composeL,
+									A2(
+										elm$core$Basics$composeL,
+										A2(
+											elm$core$Basics$composeL,
+											elm$core$Basics$round,
+											elm$core$Basics$mul(1000 / 60)),
+										elm$core$Basics$toFloat),
+									elm$core$Basics$sub(0)),
+								model.restartDelay),
+							author$project$Main$EnterTimer);
+					}
+				}();
+				var timeToWait = _n1.a;
+				var newMode = _n1.b;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{
+							mode: newMode,
+							timer: A2(
+								elm$core$Maybe$map,
+								author$project$Timer$delay(
+									A2(elm$core$Maybe$withDefault, 0, timeToWait)),
+								model.timer)
 						}),
 					elm$core$Platform$Cmd$none);
 		}
@@ -5313,9 +5372,9 @@ var author$project$Main$viewButton = F2(
 					elm$html$Html$text('Delay Timer')
 				]));
 	});
+var elm$html$Html$br = _VirtualDom_node('br');
 var elm$html$Html$div = _VirtualDom_node('div');
 var elm$html$Html$input = _VirtualDom_node('input');
-var elm$html$Html$p = _VirtualDom_node('p');
 var elm$json$Json$Encode$string = _Json_wrap;
 var elm$html$Html$Attributes$stringProperty = F2(
 	function (key, string) {
@@ -5324,6 +5383,7 @@ var elm$html$Html$Attributes$stringProperty = F2(
 			key,
 			elm$json$Json$Encode$string(string));
 	});
+var elm$html$Html$Attributes$class = elm$html$Html$Attributes$stringProperty('className');
 var elm$html$Html$Attributes$max = elm$html$Html$Attributes$stringProperty('max');
 var elm$html$Html$Attributes$min = elm$html$Html$Attributes$stringProperty('min');
 var elm$html$Html$Attributes$placeholder = elm$html$Html$Attributes$stringProperty('placeholder');
@@ -5365,16 +5425,14 @@ var author$project$Main$viewFrameInput = F2(
 	function (name, msg) {
 		return A2(
 			elm$html$Html$div,
-			_List_Nil,
 			_List_fromArray(
 				[
-					A2(
-					elm$html$Html$p,
-					_List_Nil,
-					_List_fromArray(
-						[
-							elm$html$Html$text(name)
-						])),
+					elm$html$Html$Attributes$class('timerInput')
+				]),
+			_List_fromArray(
+				[
+					elm$html$Html$text(name),
+					A2(elm$html$Html$br, _List_Nil, _List_Nil),
 					A2(
 					elm$html$Html$input,
 					_List_fromArray(
@@ -5391,32 +5449,48 @@ var author$project$Main$viewFrameInput = F2(
 				]));
 	});
 var elm$html$Html$h3 = _VirtualDom_node('h3');
-var author$project$Main$viewTimer = function (timer) {
-	var displayTicks = function (t) {
-		return (!t) ? 'TICK' : elm$core$String$fromInt(t);
-	};
-	var tickText = A2(
-		elm$core$Maybe$map,
-		A2(
-			elm$core$Basics$composeL,
+var author$project$Main$viewTimer = F2(
+	function (timer, mode) {
+		var modeText = function () {
+			if (mode.$ === 'EnterTimer') {
+				return 'Enter Mode';
+			} else {
+				return 'Restart Mode';
+			}
+		}();
+		var displayTicks = function (t) {
+			return (!t) ? 'TICK' : elm$core$String$fromInt(t);
+		};
+		var tickText = A2(
+			elm$core$Maybe$map,
 			A2(
 				elm$core$Basics$composeL,
-				displayTicks,
-				elm$core$Basics$modBy(32)),
-			function ($) {
-				return $.ticks;
-			}),
-		timer);
-	return A2(
-		elm$html$Html$h3,
-		_List_Nil,
-		_List_fromArray(
-			[
-				elm$html$Html$text(
-				A2(elm$core$Maybe$withDefault, 'No timer.', tickText))
-			]));
-};
-var elm$html$Html$Attributes$class = elm$html$Html$Attributes$stringProperty('className');
+				A2(
+					elm$core$Basics$composeL,
+					displayTicks,
+					elm$core$Basics$modBy(32)),
+				function ($) {
+					return $.ticks;
+				}),
+			timer);
+		return A2(
+			elm$html$Html$div,
+			_List_fromArray(
+				[
+					elm$html$Html$Attributes$class('timerState')
+				]),
+			_List_fromArray(
+				[
+					A2(
+					elm$html$Html$h3,
+					_List_Nil,
+					_List_fromArray(
+						[
+							elm$html$Html$text(
+							A2(elm$core$Maybe$withDefault, 'No timer.', tickText))
+						]))
+				]));
+	});
 var elm$virtual_dom$VirtualDom$style = _VirtualDom_style;
 var elm$html$Html$Attributes$style = elm$virtual_dom$VirtualDom$style;
 var author$project$Main$genGridElements = F3(
@@ -5457,7 +5531,7 @@ var author$project$Main$viewTimerVisual = function (timer_maybe) {
 				[
 					elm$html$Html$Attributes$class('timerVisual')
 				]),
-			A3(author$project$Main$genGridElements, 32, 32, '#AAAA00')) : A2(
+			A3(author$project$Main$genGridElements, 32, 32, '#DDDD33')) : A2(
 			elm$html$Html$div,
 			_List_fromArray(
 				[
@@ -5467,7 +5541,7 @@ var author$project$Main$viewTimerVisual = function (timer_maybe) {
 				author$project$Main$genGridElements,
 				A2(elm$core$Basics$modBy, 32, timer.ticks),
 				32,
-				'#00AA00'));
+				'#33AA33'));
 	} else {
 		return A2(
 			elm$html$Html$div,
@@ -5495,7 +5569,7 @@ var author$project$Main$view = function (model) {
 					]),
 				_List_fromArray(
 					[
-						author$project$Main$viewTimer(model.timer),
+						A2(author$project$Main$viewTimer, model.timer, model.mode),
 						author$project$Main$viewTimerVisual(model.timer),
 						A2(
 						elm$html$Html$div,
