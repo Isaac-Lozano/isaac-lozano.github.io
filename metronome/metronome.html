@@ -16,6 +16,69 @@
     <p>
       This is still a work in progress, so bugs probably exist and functionality probably doesn't exist.
     </p>
+    <h1>How to use</h1>
+    <p>
+      There are three phases to using this RNG manip.
+      <ol>
+        <li>Finding Load Delay.</li>
+        <li>Tuning the timer.</li>
+        <li>RUN MODE.</li>
+      </ol>
+      You only need to find your Load Delay once per stage (It does change slightly
+      between stages, it seems), but once you have your Load Delay value, you can
+      skip step 1.
+    </p>
+    <h1>Finding load delay</h1>
+    <p>
+      To find load delay:
+      <ol>
+        <li>Set Load Delay and Target Frame to 0.</li>
+        <li>Enter the level on a tick.</li>
+        <li>
+          Note which set you got and reference a 1024 list to find out what frame you
+          landed on. (1024 list sold separately)
+        </li>
+        <li>Exit the level.</li>
+        <li>Re-enter the level on another tick.</li>
+        <li>Find out what frame you landed on again and note it down.</li>
+        <li>
+          Your load delay is `(second_entry_frame - first_entry_frame) % 1024`. (You
+          can type the equation in google to calculate it. It should be a number in
+          the range 0 to 1023)
+        </li>
+      </ol>
+    </p>
+    <h1>Everything else</h1>
+    <p>
+      <ol>
+        <li>Set your Load Delay and Target Frame.</li>
+        <li>Enter the level on a tick.</li>
+        <li>Attempt your IL movement.</li>
+        <li>
+          Note which set you got and reference a 1024 list to find out what frame you
+          landed on. (1024 list sold separately)
+        </li>
+        <li>Type in what frame you got into the "Frame Entered" field.</li>
+        <li>Press "Delay Timer".</li>
+        <li>Exit the level and go to step 2.</li>
+      </ol>
+      The first time you enter the stage is your "tuning set". This set is random
+      as the program won't be synced until you tell it what set you have. Afterwards,
+      the program should be synced and you should get sets near the target frame.
+    </p>
+    <h1>Fine tuning</h1>
+    <p>
+      If you find that you're consistently getting a frames that are +n frames away
+      from the target set, your load delay may be off. To fix a bad load delay that
+      is giving you a set n frames after the target set consistently, increase your
+      load delay by n frames. Likewise, if you have a load delay which is giving you
+      a set n frames before the target set consistently, decrease your load delay by
+      n frames.
+    </p>
+    <p>
+      For example, if you are going for set 10, but keep landing on or around set
+      18 consistently, increase your load delay by 8.
+    </p>
   </div>
   <script>
   var app = Elm.Main.init({
